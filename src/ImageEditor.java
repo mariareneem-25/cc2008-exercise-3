@@ -8,24 +8,17 @@ public class ImageEditor {
     /**
     * Negative: every color value is replaced by its opposite.
     * A very dark pixel (0) becomes very bright (255), and the other way around.
-    *
-    * The pattern is always the same:
-    *   1. loop over every row
-    *   2. loop over every column
-    *   3. do something with the three values of that pixel
     */
     public Image negative() {
         Image transformed = new Image(og.getHeight(), og.getWidth());
 
         for (int row = 0; row < og.getHeight(); row++) {
             for (int col = 0; col < og.getWidth(); col++) {
-                // apply pixel transform here
                 Pixel p = og.getPixel(row, col);
                 int r = 255 - p.r;
                 int g = 255 - p.g;
                 int b = 255 - p.b;
-                // assign pixel to `transformed` image
-                transformed.setPixel(row, col, new Pixel(r,g,b));
+                transformed.setPixel(row, col, new Pixel(r, g, b));
             }
         }
 
@@ -34,125 +27,255 @@ public class ImageEditor {
 
     /**
     * TASK 1 - Grayscale.
-    *
-    * For each pixel, calculate the average of its three values and then
-    * store that same average in all three channels.
-    *
     * average = (red + green + blue) / 3
-    *
-    * Use the same double loop as negative().
     */
     public Image grayscale() {
-        return null;
+        Image transformed = new Image(og.getHeight(), og.getWidth());
+
+        for (int row = 0; row < og.getHeight(); row++) {
+            for (int col = 0; col < og.getWidth(); col++) {
+                Pixel p = og.getPixel(row, col);
+                int avg = (p.r + p.g + p.b) / 3;
+                transformed.setPixel(row, col, new Pixel(avg, avg, avg));
+            }
+        }
+
+        return transformed;
     }
 
     /**
     * TASK 2 - Keep only one channel.
     *
-    * If channel is 0, keep red and set green and blue to 0.
-    * If channel is 1, keep green and set red and blue to 0.
-    * If channel is 2, keep blue and set red and green to 0.
-    *
-    * Hint: you can do this with a loop over the three channels and an if,
-    * or with three separate lines. Both are fine.
-    *
     * @param channel 0 = red, 1 = green, 2 = blue
     */
     public Image keepOnlyChannel(int channel) {
-        return null;
+        Image transformed = new Image(og.getHeight(), og.getWidth());
+
+        for (int row = 0; row < og.getHeight(); row++) {
+            for (int col = 0; col < og.getWidth(); col++) {
+                Pixel p = og.getPixel(row, col);
+                int r = (channel == 0) ? p.r : 0;
+                int g = (channel == 1) ? p.g : 0;
+                int b = (channel == 2) ? p.b : 0;
+                transformed.setPixel(row, col, new Pixel(r, g, b));
+            }
+        }
+
+        return transformed;
     }
 
     /**
     * TASK 3 - Brightness.
-    *
-    * Add 'amount' to every color value. A positive amount makes the image
-    * brighter, a negative amount makes it darker.
-    *
-    * CAREFUL: color values must stay between 0 and 255.
-    * If a result is above 255, store 255. If it is below 0, store 0.
-    * (This is called "clamping".)
-    *
-    * Run it once WITHOUT clamping and look at the output file. Then add the
-    * clamping and compare. You should be able to explain the difference.
+    * Add 'amount' to every color value, clamped between 0 and 255.
     */
     public Image brightness(int amount) {
-        return null;
+        Image transformed = new Image(og.getHeight(), og.getWidth());
+
+        for (int row = 0; row < og.getHeight(); row++) {
+            for (int col = 0; col < og.getWidth(); col++) {
+                Pixel p = og.getPixel(row, col);
+                int r = clamp(p.r + amount);
+                int g = clamp(p.g + amount);
+                int b = clamp(p.b + amount);
+                transformed.setPixel(row, col, new Pixel(r, g, b));
+            }
+        }
+
+        return transformed;
+    }
+
+    // helper usado solo por brightness() para mantener los valores en rango
+    private int clamp(int value) {
+        if (value > 255) return 255;
+        if (value < 0) return 0;
+        return value;
     }
 
     /**
     * TASK 4 - Black and white (threshold).
     *
-    * For each pixel, calculate the average of its three values.
-    * If the average is greater than 'limit', turn the pixel completely
-    * white (255, 255, 255). Otherwise turn it completely black (0, 0, 0).
-    *
-    * Try it with limit = 128, then with 60, then with 200.
-    *
     * @param limit a value between 0 and 255
     */
     public Image blackAndWhite(int limit) {
-        return null;
+        Image transformed = new Image(og.getHeight(), og.getWidth());
+
+        for (int row = 0; row < og.getHeight(); row++) {
+            for (int col = 0; col < og.getWidth(); col++) {
+                Pixel p = og.getPixel(row, col);
+                int avg = (p.r + p.g + p.b) / 3;
+
+                if (avg > limit) {
+                    transformed.setPixel(row, col, new Pixel(255, 255, 255));
+                } else {
+                    transformed.setPixel(row, col, new Pixel(0, 0, 0));
+                }
+            }
+        }
+
+        return transformed;
     }
 
-    // ---------------------------------------------------------------
-    // PART 2 - MOVING PIXELS AROUND
-    // Here you do not change colors. You change POSITIONS.
-    // ---------------------------------------------------------------
-
-    /**
-    * TASK 5 - Mirror horizontally (like a mirror on the wall).
-    *
-    * The pixel in column x must end up in column (width - 1 - x),
-    * staying in the same row.
-    *
-    * Suggested approach:
-    *   1. create a new array of the SAME size:
-    *          int[][][] result = new int[height][width][3];
-    *   2. copy each pixel to its mirrored position
-    *   3. at the end, replace the field:  this.pixels = result;
-    *
-    * Question to answer in your report: why is it a bad idea to swap the
-    * values directly inside the original array using the full width?
-    */
     public Image mirrorHorizontal() {
-        return null;
+        int height = og.getHeight();
+        int width = og.getWidth();
+        Image transformed = new Image(height, width);
+
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                Pixel p = og.getPixel(row, col);
+                int newCol = width - 1 - col;
+                transformed.setPixel(row, newCol, new Pixel(p.r, p.g, p.b));
+            }
+        }
+
+        return transformed;
     }
 
-    /**
-    * TASK 6 - Rotate 90 degrees to the right.
-    *
-    * This is the important one. The new image does NOT have the same shape
-    * as the old one: rows become columns and columns become rows.
-    *
-    *   new array size  ->  int[width][height][3]
-    *
-    * The pixel at (row y, column x) of the original ends up at
-    * (row x, column height - 1 - y) of the result.
-    *
-    * Do not forget to update this.width and this.height at the end,
-    * otherwise every method you call afterwards will break.
-    */
+
     public Image rotate90() {
-        return null;
+        int height = og.getHeight();
+        int width = og.getWidth();
+        Image transformed = new Image(width, height);
+
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                Pixel p = og.getPixel(row, col);
+                int newRow = col;
+                int newCol = height - 1 - row;
+                transformed.setPixel(newRow, newCol, new Pixel(p.r, p.g, p.b));
+            }
+        }
+
+        return transformed;
     }
 
-    // ---------------------------------------------------------------
-    // PART 3 - OPTIONAL CHALLENGE
-    // ---------------------------------------------------------------
+    public void blur() {
+        int height = og.getHeight();
+        int width = og.getWidth();
+
+        Pixel[][] copy = new Pixel[height][width];
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                Pixel p = og.getPixel(row, col);
+                copy[row][col] = new Pixel(p.r, p.g, p.b);
+            }
+        }
+
+        for (int row = 1; row < height - 1; row++) {
+            for (int col = 1; col < width - 1; col++) {
+                int sumR = 0, sumG = 0, sumB = 0;
+
+                for (int dr = -1; dr <= 1; dr++) {
+                    for (int dc = -1; dc <= 1; dc++) {
+                        Pixel neighbor = copy[row + dr][col + dc];
+                        sumR += neighbor.r;
+                        sumG += neighbor.g;
+                        sumB += neighbor.b;
+                    }
+                }
+
+                og.setPixel(row, col, new Pixel(sumR / 9, sumG / 9, sumB / 9));
+            }
+        }
+    }
+
+    //
+    // @throws IllegalArgumentException si filterName no es un filtro soportado.
+    ///
+    public Image applyFilter(String filterName, int param) {
+        switch (filterName) {
+            case "grises":
+                return grayscale();
+            case "negativo":
+                return negative();
+            case "rojo":
+                return keepOnlyChannel(0);
+            case "verde":
+                return keepOnlyChannel(1);
+            case "azul":
+                return keepOnlyChannel(2);
+            case "brillo":
+                return brightness(param);
+            case "umbral":
+                return blackAndWhite(param);
+            case "espejo":
+                return mirrorHorizontal();
+            case "rotar":
+                return rotate90();
+            default:
+                throw new IllegalArgumentException("Filtro no reconocido: " + filterName);
+        }
+    }
+
+
+    public static Image copy(Image source) {
+        int height = source.getHeight();
+        int width = source.getWidth();
+        Image copy = new Image(height, width);
+
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                Pixel p = source.getPixel(row, col);
+                copy.setPixel(row, col, new Pixel(p.r, p.g, p.b));
+            }
+        }
+
+        return copy;
+    }
+    public static double averageBrightness(Image image) {
+        long sum = 0;
+        int height = image.getHeight();
+        int width = image.getWidth();
+
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                Pixel p = image.getPixel(row, col);
+                sum += p.r + p.g + p.b;
+            }
+        }
+
+        return (double) sum / (height * width * 3);
+    }
 
     /**
-    * BONUS - Blur.
-    *
-    * Each pixel becomes the average of itself and its 8 neighbours.
-    *
-    * You must read from a COPY of the original and write into a new array,
-    * because if you overwrite pixels while reading them, the blur will
-    * "smear" in one direction and look wrong.
-    *
-    * Ignore the pixels on the border of the image (start your loops at 1
-    * and stop at height - 1 and width - 1). Copy the border unchanged.
+    * @return 
     */
-    public void blur() {
-        // TODO: optional
+    public static int[] findLightestPixel(Image image) {
+        return findExtremePixel(image, true);
+    }
+
+    /**
+    * @return 
+    */
+    public static int[] findDarkestPixel(Image image) {
+        return findExtremePixel(image, false);
+    }
+
+    private static int[] findExtremePixel(Image image, boolean lightest) {
+        int height = image.getHeight();
+        int width = image.getWidth();
+
+        int bestRow = 0;
+        int bestCol = 0;
+        int bestAvg = lightest ? -1 : 256;
+
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                Pixel p = image.getPixel(row, col);
+                int avg = (p.r + p.g + p.b) / 3;
+
+                if (lightest && avg > bestAvg) {
+                    bestAvg = avg;
+                    bestRow = row;
+                    bestCol = col;
+                } else if (!lightest && avg < bestAvg) {
+                    bestAvg = avg;
+                    bestRow = row;
+                    bestCol = col;
+                }
+            }
+        }
+
+        return new int[] { bestRow, bestCol };
     }
 }

@@ -29,3 +29,4 @@ public class Image {
         this.pixels[row][col] = p;
     }
 }
+ 
